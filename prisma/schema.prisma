@@ -1,0 +1,171 @@
+// Defina a versão do Prisma (opcional, mas recomendado para evitar conflitos)
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
+  previewFeatures = ["multiSchema", "fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+// Modelo principal do Tenant (schema público)
+model Tenant {
+  id           String          @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String          @unique
+  isActive     Boolean         @default(false)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  users        User[]
+  plans        Plan[]
+  settings     TenantSettings?
+  Profile      Profile[]
+  PaymentOrder PaymentOrder[]
+  Role         Role[]
+  Session      Session[]
+
+  @@map("tenants")
+}
+
+model TenantSettings {
+  id       String  @id @default(uuid()) @db.Uuid
+  theme    String?
+  logoUrl  String? @map("logo_url")
+  timezone String  @default("America/Sao_Paulo")
+  tenantId String  @unique @db.Uuid
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model Plan {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  price       Float
+  features    Json
+  tenantId    String  @db.Uuid
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("plans")
+}
+
+model User {
+  id           String         @id @default(uuid()) @db.Uuid
+  email        String         @unique
+  password     String
+  isDeleted    Boolean        @default(false)
+  roles        Role[]         @relation("UserRoles")
+  profile      Profile?
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
+  tenantId     String         @db.Uuid
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  PaymentOrder PaymentOrder[]
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Profile {
+  id                     String   @id @default(uuid()) @db.Uuid
+  name                   String
+  identificationDocument String   @map("identification_document")
+  cellPhone              String   @map("cell_phone")
+  photoUrl               String?  @map("photo_url")
+  street                 String
+  number                 String
+  neighborhood           String
+  latitude               Float?
+  longitude              Float?
+  dueDate                String   @map("due_date")
+  billingEmail           String   @map("billing_email")
+  userId                 String   @unique @db.Uuid
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId               String   @db.Uuid
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("profiles")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String
+  permissions String[] // Armazena como ['resource:action', ...]
+  isDefault   Boolean  @default(false)
+  users       User[]   @relation("UserRoles")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId    String   @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model PaymentOrder {
+  id            String   @id @default(uuid()) @db.Uuid
+  dueDate       DateTime @map("due_date")
+  paymentMethod String   @map("payment_method")
+  value         Float    @map("payment_order_value")
+  purpose       String   @map("payment_for")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  userId        String   @db.Uuid
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId      String   @db.Uuid
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId])
+  @@map("payment_orders")
+}
+
+model SystemAdmin {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  password  String // hash!
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // outros campos, se necessário
+  @@map("system_admins")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String?  @db.Uuid
+  userId        String?  @db.Uuid
+  action        String
+  details       String?
+  level         String
+  correlationId String?
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("audit_log")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  tenantId     String   @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId])
+  @@map("sessions")
+}

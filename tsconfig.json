@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@errors/*": ["src/shared/errors/types/*"],
+      "@exceptions/*": ["src/shared/errors/exceptions/*"],
+      "@inject-tokens/*": ["src/shared/inject-tokens/*"],
+      "@base-repository": ["src/shared/base-repository/*"],
+      "@config": ["src/shared/config/*"],
+      "@hashing": ["src/shared/hashing/*"],
+    },
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false
+  }
+}
