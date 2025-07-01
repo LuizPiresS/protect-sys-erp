@@ -20,6 +20,7 @@
  */
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { IBaseRepository } from './interfaces/base-repository.interface';
 
 @Injectable()
 export abstract class BaseRepository<
@@ -28,7 +29,8 @@ export abstract class BaseRepository<
   Create,
   Update,
   FindManyArgs = any,
-> {
+> implements IBaseRepository<T, Where, Create, Update, FindManyArgs>
+{
   protected abstract getModel(prisma: PrismaClient): any;
 
   async create(prisma: PrismaClient, data: Create): Promise<T> {
@@ -68,6 +70,16 @@ export abstract class BaseRepository<
       }
       throw error;
     }
+  }
+
+  async softDelete(prisma: PrismaClient, where: Where): Promise<T> {
+    return this.getModel(prisma).update({
+      where,
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
+      } as any,
+    });
   }
 
   async count(prisma: PrismaClient, where?: Where): Promise<number> {
