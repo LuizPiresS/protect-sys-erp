@@ -1,5 +1,4 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { HashingModule } from './shared/hashing/hashing.module';
 import { ConfigModule } from '@nestjs/config';
 import { validate } from './shared/config/env.validation';
@@ -34,7 +33,7 @@ import { RoleManagementModule } from './modules/role-management/role-management.
     RoleManagementModule,
   ],
   controllers: [],
-  providers: [PrismaClient],
+  providers: [],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
