@@ -9,6 +9,9 @@ services:
       - '9229:9229'
     volumes:
       - .:/home/node/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/protect_sys_erp?schema=public
+      - REDIS_HOST=redis
     depends_on:
       - db
       - redis

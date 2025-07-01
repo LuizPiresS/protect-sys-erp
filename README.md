@@ -51,6 +51,8 @@ Copie o arquivo de exemplo e ajuste conforme necessário:
 cp env.example .env
 ```
 
+**⚠️ Importante:** Para desenvolvimento local com Docker, a `DATABASE_URL` no arquivo `.env` deve usar `localhost:5432`, mas o Docker Compose já está configurado para usar `db:5432` automaticamente.
+
 ### 3. Instale o AWS CLI (se necessário)
 
 ```sh
