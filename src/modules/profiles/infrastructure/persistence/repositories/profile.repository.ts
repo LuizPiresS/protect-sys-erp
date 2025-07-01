@@ -14,29 +14,6 @@ export class ProfileRepository
   >
   implements IProfileRepository
 {
-  softDelete(
-    prisma: PrismaClient,
-    where: Prisma.ProfileWhereUniqueInput,
-  ): Promise<{
-    number: string;
-    name: string;
-    id: string;
-    identificationDocument: string;
-    cellPhone: string;
-    photoUrl: string | null;
-    street: string;
-    neighborhood: string;
-    latitude: number | null;
-    longitude: number | null;
-    dueDate: string;
-    billingEmail: string;
-    userId: string;
-    tenantId: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }> {
-    throw new Error('Method not implemented.');
-  }
   protected getModel(prisma: PrismaClient) {
     return prisma.profile;
   }
@@ -46,7 +23,12 @@ export class ProfileRepository
     id: string,
     tenantId: string,
   ): Promise<Profile | null> {
-    return this.getModel(prisma).findFirst({ where: { id, tenantId } });
+    return this.getModel(prisma).findFirst({
+      where: {
+        id,
+        tenantId,
+      },
+    });
   }
 
   async findByUserId(
@@ -54,6 +36,92 @@ export class ProfileRepository
     userId: string,
     tenantId: string,
   ): Promise<Profile | null> {
-    return this.getModel(prisma).findFirst({ where: { userId, tenantId } });
+    return this.getModel(prisma).findFirst({
+      where: {
+        userId,
+        tenantId,
+      },
+    });
+  }
+
+  async softDelete(
+    prisma: PrismaClient,
+    where: Prisma.ProfileWhereUniqueInput,
+  ): Promise<Profile> {
+    return this.getModel(prisma).update({
+      where,
+      data: {
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  // Sobrescreve o método findAll para incluir ordenação
+  async findAll(prisma: PrismaClient, tenantId: string): Promise<Profile[]> {
+    return this.getModel(prisma).findMany({
+      where: {
+        tenantId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  // Sobrescreve o método findWithFilters para incluir ordenação
+  async findWithFilters(
+    prisma: PrismaClient,
+    options: Prisma.ProfileFindManyArgs & { tenantId: string },
+  ): Promise<Profile[]> {
+    const { tenantId, ...restOptions } = options;
+    return this.getModel(prisma).findMany({
+      ...restOptions,
+      where: {
+        ...restOptions.where,
+        tenantId,
+      },
+      orderBy: {
+        ...restOptions.orderBy,
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  // Método específico para buscar perfis com dados do usuário
+  async findWithUser(
+    prisma: PrismaClient,
+    tenantId: string,
+  ): Promise<Profile[]> {
+    return this.getModel(prisma).findMany({
+      where: {
+        tenantId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  // Método para buscar perfil por documento de identificação
+  async findByIdentificationDocument(
+    prisma: PrismaClient,
+    identificationDocument: string,
+    tenantId: string,
+  ): Promise<Profile | null> {
+    return this.getModel(prisma).findFirst({
+      where: {
+        identificationDocument,
+        tenantId,
+      },
+    });
   }
 }

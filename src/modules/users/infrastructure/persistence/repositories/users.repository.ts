@@ -14,20 +14,6 @@ export class UsersRepository
   >
   implements IUsersRepository
 {
-  softDelete(
-    prisma: PrismaClient,
-    where: Prisma.UserWhereUniqueInput,
-  ): Promise<{
-    id: string;
-    email: string;
-    password: string;
-    isDeleted: boolean;
-    tenantId: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }> {
-    throw new Error('Method not implemented.');
-  }
   protected getModel(prisma: PrismaClient) {
     return prisma.user;
   }
@@ -37,7 +23,13 @@ export class UsersRepository
     email: string,
     tenantId: string,
   ): Promise<User | null> {
-    return this.getModel(prisma).findFirst({ where: { email, tenantId } });
+    return this.getModel(prisma).findFirst({
+      where: {
+        email,
+        tenantId,
+        isDeleted: false,
+      },
+    });
   }
 
   async findById(
@@ -45,6 +37,76 @@ export class UsersRepository
     id: string,
     tenantId: string,
   ): Promise<User | null> {
-    return this.getModel(prisma).findFirst({ where: { id, tenantId } });
+    return this.getModel(prisma).findFirst({
+      where: {
+        id,
+        tenantId,
+        isDeleted: false,
+      },
+    });
+  }
+
+  async softDelete(
+    prisma: PrismaClient,
+    where: Prisma.UserWhereUniqueInput,
+  ): Promise<User> {
+    return this.getModel(prisma).update({
+      where,
+      data: {
+        isDeleted: true,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async findAll(prisma: PrismaClient, tenantId: string): Promise<User[]> {
+    return this.getModel(prisma).findMany({
+      where: {
+        tenantId,
+        isDeleted: false,
+      },
+    });
+  }
+
+  async findWithFilters(
+    prisma: PrismaClient,
+    options: Prisma.UserFindManyArgs & { tenantId: string },
+  ): Promise<User[]> {
+    const { tenantId, ...restOptions } = options;
+    return this.getModel(prisma).findMany({
+      ...restOptions,
+      where: {
+        ...restOptions.where,
+        tenantId,
+        isDeleted: false,
+      },
+    });
+  }
+
+  async findActiveUsers(
+    prisma: PrismaClient,
+    tenantId: string,
+  ): Promise<User[]> {
+    return this.getModel(prisma).findMany({
+      where: {
+        tenantId,
+        isDeleted: false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async findByEmailWithoutTenant(
+    prisma: PrismaClient,
+    email: string,
+  ): Promise<User | null> {
+    return this.getModel(prisma).findFirst({
+      where: {
+        email,
+        isDeleted: false,
+      },
+    });
   }
 }
